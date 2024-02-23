@@ -22,7 +22,7 @@ else
   if [[ ! -f ${backupFileName} ]]
   then
     ${ECHO} sed -i "${backupExtension}" -e 's/val hapiProtoBranchOrTag = "\(.*\)"/val hapiProtoBranchOrTag = "'"${branchToVerify}"'"/' "${settingsFile}"
-    (${ECHO} ./gradlew clean "${gradleBuildTask}" --no-build-cache --no-configuration-cache) || (echo;echo;echo `FAILED`;echo;echo)
+    (${ECHO} ./gradlew clean "${gradleBuildTask}" --no-daemon --no-build-cache --no-configuration-cache) || (echo;echo;echo `FAILED`;echo;echo)
     if [[ -f ${backupFileName} ]]
     then
       ${ECHO} rm "${settingsFile}"
