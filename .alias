@@ -1,0 +1,114 @@
+# Aliases and shell functions for Swirlds Labs Mac laptops.
+
+# Sometimes Mac decides to flash the heck out of the screen instead of beeping, regardless of setting.
+# This fixes it.
+alias fixVisualScream='sudo killall coreaudiod '
+alias ls='ls '
+alias ll='ls -l '
+alias la='ls -la '
+alias lart='ls -lart '
+alias lars='ls -larS '
+alias peekd='dirs '
+alias clearh='clear;history -c;history -w '
+alias largest='du -ms * | sort -n | tail '
+alias findNodes='ps auxww | fgrep java | cut -w -f 2,3,4,9,10-12 '
+alias showGitCleanTargets=' clear; git clean -dxn | egrep -v "build/|\.idea/|\.gradle/|hapi/checkouts\.bin|ExpectedMap.json.gz" '
+
+alias netserv='netstat -van -p tcp | fgrep LISTEN | cut -w -f 1,4,6,9 '
+alias netlist='lsof -P -iTCP -sTCP:LISTEN '
+
+alias gitupdate='git fetch && git prune && git remote prune origin && git gc '
+alias gitreset='git checkout local-base && git fetch && git prune && git remote prune origin && git rebase origin/develop && git gc && git branch '
+alias gitmainreset='git checkout local-base && git fetch && git prune && git remote prune origin && git rebase origin/main && git gc && git branch '
+alias newclone='git checkout -b local-base && git branch -D develop && git prune && git gc && git branch '
+
+# Gradle commands are a pain to type, add some shortcuts
+export GRADLE='nice -n 20 gradle '
+export GRADLE_UT_OPTS=' -Dtestlogger.showPassed=false -Dtestlogger.showSkipped=false -Dtestlogger.showPassedStandardStreams=false -Dtestlogger.theme=mocha-parallel '
+export GRADLE_PARALLEL_OPTS='--parallel --max-workers=12' # Apple M1 Max has only 10 cores...
+export GRADLE_CLEAN_OPTS='--no-daemon --no-build-cache --no-configuration-cache'
+# The "merged build" has no proper compile option, so we have to do this garbage, an hope it cleans up enough of the mess
+export GRADLE_COMPILE_OPTS="-Dsonar.gradle.skipCompile=true --warning-mode=summary ${GRADLE_PARALLEL_OPTS} ${GRADLE_CLEAN_OPTS}"
+export GRADLE_TEST_OPTS="--no-daemon ${GRADLE_PARALLEL_OPTS} ${GRADLE_UT_OPTS}"
+alias grdlProjects='${GRADLE} projects ${GRADLE_CLEAN_OPTS} '
+alias grdlClean='${GRADLE} clean --warning-mode=summary ${GRADLE_PARALLEL_OPTS} ${GRADLE_CLEAN_OPTS} '
+alias grdlTest='${GRADLE} assemble ${GRADLE_COMPILE_OPTS} && ${GRADLE} test ${GRADLE_TEST_OPTS} '
+alias grdlHapi='${GRADLE} hapiTest -Dsonar.gradle.skipCompile=true ${GRADLE_TEST_OPTS} ${GRADLE_CLEAN_OPTS} '
+alias grdlModules='${GRADLE} checkAllModuleInfo ${GRADLE_COMPILE_OPTS} '
+alias grdlCompile='${GRADLE} assemble ${GRADLE_COMPILE_OPTS} '
+alias grdlCleanCompile='${GRADLE} clean assemble ${GRADLE_COMPILE_OPTS} '
+alias grdlCleanTest='grdlCleanCompile && ${GRADLE} test ${GRADLE_TEST_OPTS} '
+alias grdlScanTest='grdlCleanCompile && ${GRADLE} test ${GRADLE_TEST_OPTS} ${GRADLE_CLEAN_OPTS} --scan '
+alias grdlFastTest='${GRADLE} test --warning-mode=summary ${GRADLE_TEST_OPTS} '
+alias grdlExtraCleanTest='grdlCleanCompile && grdlModules && ${GRADLE} test ${GRADLE_TEST_OPTS} ${GRADLE_CLEAN_OPTS} '
+alias grdlSpotless='grdlCompile && ${GRADLE} ${GRADLE_PARALLEL_OPTS} ${GRADLE_CLEAN_OPTS} checkAllModuleInfo spotlessCheck --warning-mode=summary -Dsonar.gradle.skipCompile=true '
+alias grdlReformat='${GRADLE} ${GRADLE_PARALLEL_OPTS} ${GRADLE_CLEAN_OPTS} spotlessApply --warning-mode=summary -Dsonar.gradle.skipCompile=true '
+alias finalPRChecks='grdlReformat && grdlExtraCleanTest && ${GRADLE} build --warning-mode=summary ${GRADLE_TEST_OPTS} && grdlHapi '
+alias pbjInt='${GRADLE} ${GRADLE_CLEAN_OPTS} clean :generatePbjSource :generateProto && ${GRADLE} ${GRADLE_CLEAN_OPTS} assemble test ${GRADLE_PARALLEL_OPTS} ${GRADLE_UT_OPTS} '
+alias pbjCore='${GRADLE} ${GRADLE_CLEAN_OPTS} clean assemble test ${GRADLE_PARALLEL_OPTS} ${GRADLE_UT_OPTS} publishToMavenLocal '
+
+alias pip='pip3 '
+
+gitFixMerge()
+{
+  echo ' '
+  echo 'Fixing Merge-vs-Rebase issues should always be done manually!'
+  echo 'replace "origin/develop" with the target rebase branch'
+  echo 'This set of commands will *ERASE* history;'
+  echo '  only use if you have no need to keep branch commit history.'
+  echo ' '
+  echo '    git checkout YOUR_BRANCH'
+  echo '    git reset $(git merge-base origin/develop $(git branch --show-current))'
+  echo '    git add ALL_YOUR_STUFF'
+  echo '    git commit -sS'
+  echo '    git push -f'
+  echo '    '
+}
+
+findRefs()
+{
+  reference="${1:-UNSPECIFIED}"
+  filespec="${2:-java}"
+  folder="${3:-.}"
+  find "${folder}" -name "*.${filespec}" -and -not -path "*/generated/*" -and -not -path "*/build/*" -exec fgrep "${reference}" '{}' \+
+}
+
+countLines()
+{
+  folder="${1:-.}"
+  filespec="${2:-*.java}"
+  wc -l <(find "${folder}" -name "${filespec}" -exec cat '{}' \+)
+}
+
+cleanupRepo() {
+  filesToRemove="$(git clean -dxn | egrep -v '\.gradle|.idea|ExpectedMap.json.gz' | sed -e 's^Would remove \(.*\)^\1^')"
+  echo removing
+  echo ${filesToRemove}
+  rm -rf ${filesToRemove}
+}
+
+AllRepoCleanup() {
+  pushd ~/Projects
+    for repo in $(find . -type d -depth 2)
+    do
+      if [[ -d ${repo}/.git ]]
+      then
+        pushd ${repo}
+          git stash
+          git checkout local-base
+          git fetch
+          git remote prune origin
+          git rebase origin/develop
+          git branch -a
+        popd
+        sleep 5
+      fi
+    done
+  popd
+}
+
+b64d() {
+  base64 -d <<<"$*"
+  echo
+}
+
