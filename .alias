@@ -27,7 +27,6 @@ export GRADLE='nice -n 20 gradle '
 export GRADLE_UT_OPTS=' -Dtestlogger.showPassed=false -Dtestlogger.showSkipped=false -Dtestlogger.showPassedStandardStreams=false -Dtestlogger.theme=mocha-parallel '
 export GRADLE_PARALLEL_OPTS='--parallel --max-workers=12' # Apple M1 Max has only 10 cores...
 export GRADLE_CLEAN_OPTS='--no-daemon --no-build-cache --no-configuration-cache'
-# The "merged build" has no proper compile option, so we have to do this garbage, an hope it cleans up enough of the mess
 export GRADLE_COMPILE_OPTS="-Dsonar.gradle.skipCompile=true --warning-mode=summary ${GRADLE_PARALLEL_OPTS} ${GRADLE_CLEAN_OPTS}"
 export GRADLE_TEST_OPTS="--no-daemon ${GRADLE_PARALLEL_OPTS} ${GRADLE_UT_OPTS}"
 alias grdlProjects='${GRADLE} projects ${GRADLE_CLEAN_OPTS} '

@@ -2,54 +2,98 @@
 # Echo commands for testing
 #export ECHO_ONE=echo
 #export ECHO_TWO=echo
+#export ECHO_THREE=echo
 
 # Get the location of the modified template (needed to fix a bug in markdown processing)
+export TEMPLATE_LOCATION=../documents/modified_md.tmpl
 
 create_if_absent()
 {
   if [ ! -d "${1}" ]
   then
-    ${ECHO_TWO} mkdir -p "${1}"
+    ${ECHO_THREE} mkdir -p "${1}"
   fi
 }
 
 generate_docs_for_one_file()
 {
-  file_base="${1:-account}"
-  folder_base="${2:-token/}"
-  folder_parent="${3:-state/}"
-  sub_path="${folder_parent}${folder_base}"
-  docs_folder="../documents/"
+  base_file="${1}" # accounts
+  parent_folder="${2}" # state/
+  unit_folder="${3}" # token/
+  docs_folder="${4}"
+  sub_path="${parent_folder}${unit_folder}"
 
-  create_if_absent ../documents/${sub_path}
-  create_if_absent ../documents/html/${sub_path}
+  create_if_absent ${docs_folder}${sub_path}
  
-  ${ECHO_TWO} protoc --plugin=${HOME}/go/bin/protoc-gen-doc --doc_opt=${docs_folder}modified_md.tmpl,${file_base}.md --doc_out=${docs_folder}${sub_path} ${sub_path}${file_base}.proto
-## Not running html as the output is quite bad.  Keeping in the script in cast it's required later.
-#  ${ECHO_TWO} protoc --plugin=${HOME}/go/bin/protoc-gen-doc --doc_opt=html,${file_base}.html --doc_out=${docs_folder}html/${sub_path} ${sub_path}${file_base}.proto
+  ${ECHO_TWO} protoc --proto_path=../services --proto_path=../streams --proto_path=../block --proto_path=../platform --proto_path=../mirror --proto_path=../sdk --proto_path=../run --plugin=${HOME}/go/bin/protoc-gen-doc --doc_opt=${TEMPLATE_LOCATION},${base_file}.md --doc_out=${docs_folder}${sub_path} ${sub_path}${base_file}.proto
 }
 
 generate_doc_set()
 {
+  component_folder="${1}"
+  shift
+  parent_folder="${1}"
+  shift
   current_folder="${1}"
   shift
+  pushd ${component_folder} >/dev/null
   for current_file in $*
   do
-    ${ECHO_ONE} generate_docs_for_one_file "${current_file}" "${current_folder}/"
+    ${ECHO_ONE} generate_docs_for_one_file "${current_file}" "${parent_folder}" "${current_folder}" "../documents/api/${component_folder}/"
   done
+  popd >/dev/null
 }
 
-generate_docs_for_one_file "basic_types" " " " "
+generate_api_doc_set()
+{
+  component_folder="${1}"
+  shift
+  pushd ${component_folder} >/dev/null
+  for current_file in *.proto
+  do
+    file_name="${current_file%.proto}"
+    ${ECHO_ONE} generate_docs_for_one_file "${file_name}" " " " " "../documents/api/${component_folder}/"
+  done
+  popd >/dev/null
+}
 
-generate_doc_set token account nft token_relation token staking_node_info network_staking_rewards
-generate_doc_set blockrecords block_info running_hashes
-generate_doc_set schedule schedule
-generate_doc_set throttles throttle_usage_snapshots
-generate_doc_set congestion congestion_level_starts
-generate_doc_set recordcache recordcache
-generate_doc_set consensus topic
-generate_doc_set file file
-generate_doc_set contract bytecode storage_slot
-#generate_doc_set 
+generate_streams()
+{
+  generate_api_doc_set streams
+}
 
+generate_block()
+{
+  generate_api_doc_set block
+  generate_doc_set block stream/ "" block block_header block_item block_state_proof event_metadata
+  generate_doc_set block stream/ input/ system_transaction
+  generate_doc_set block stream/ output/ network_service consensus_service crypto_service file_service schedule_service smart_contract_service token_service util_service transaction_output transaction_result state_changes
+}
+
+generate_platform()
+{
+  #generate_api_doc_set platform
+  generate_doc_set platform event/ "" event_core event_descriptor event_payload gossip_event state_signature_payload
+}
+
+generate_services()
+{
+  generate_api_doc_set services
+  generate_doc_set services state/ addressbook/ node
+  generate_doc_set services state/ token/ account nft token_relation token staking_node_info network_staking_rewards
+  generate_doc_set services state/ blockrecords/ block_info running_hashes
+  generate_doc_set services state/ schedule/ schedule
+  generate_doc_set services state/ throttles/ throttle_usage_snapshots
+  generate_doc_set services state/ congestion/ congestion_level_starts
+  generate_doc_set services state/ recordcache/ recordcache
+  generate_doc_set services state/ consensus/ topic
+  generate_doc_set services state/ file/ file
+  generate_doc_set services state/ contract/ bytecode storage_slot
+  generate_doc_set services state/ ""  primitives
+}
+
+generate_block
+generate_platform
+generate_streams
+generate_services
 
