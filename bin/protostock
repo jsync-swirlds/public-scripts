@@ -1,0 +1,78 @@
+#!/bin/bash
+# Echo commands for testing
+#export ECHO_ONE=echo
+#export ECHO_TWO=echo
+#export ECHO_THREE=echo
+
+# Get the location of the modified template (needed to fix a bug in markdown processing)
+export TEMPLATE_LOCATION=../documents/modified_md.tmpl
+
+create_if_absent()
+{
+  if [ ! -d "${1}" ]
+  then
+    ${ECHO_THREE} mkdir -p "${1}"
+  fi
+}
+
+generate_docs_for_one_file()
+{
+  base_file="${1}" # accounts
+  parent_folder="${2}" # state/
+  unit_folder="${3}" # token/
+  docs_folder="${4}"
+  sub_path="${parent_folder}${unit_folder}"
+
+  create_if_absent ${docs_folder}${sub_path}
+ 
+  ${ECHO_TWO} protoc --proto_path=../services --proto_path=../streams --proto_path=../block --proto_path=../platform --proto_path=../mirror --proto_path=../sdk --proto_path=../run --plugin=${HOME}/go/bin/protoc-gen-doc --doc_opt=${TEMPLATE_LOCATION},${base_file}.md --doc_out=${docs_folder}${sub_path} ${sub_path}${base_file}.proto
+}
+
+generate_doc_set()
+{
+  component_folder="${1}"
+  shift
+  parent_folder="${1}"
+  shift
+  current_folder="${1}"
+  shift
+  pushd ${component_folder} >/dev/null
+  for current_file in $*
+  do
+    ${ECHO_ONE} generate_docs_for_one_file "${current_file}" "${parent_folder}" "${current_folder}" "../documents/api/${component_folder}/"
+  done
+  popd >/dev/null
+}
+
+generate_api_doc_set()
+{
+  component_folder="${1}"
+  shift
+  pushd ${component_folder} >/dev/null
+  for current_file in *.proto
+  do
+    file_name="${current_file%.proto}"
+    ${ECHO_ONE} generate_docs_for_one_file "${file_name}" " " " " "../documents/api/${component_folder}/"
+  done
+  popd >/dev/null
+}
+
+generate_services()
+{
+  generate_api_doc_set services
+  generate_doc_set services state/ addressbook/ node
+  generate_doc_set services state/ token/ account nft token_relation token staking_node_info network_staking_rewards
+  generate_doc_set services state/ blockrecords/ block_info running_hashes
+  generate_doc_set services state/ schedule/ schedule
+  generate_doc_set services state/ throttles/ throttle_usage_snapshots
+  generate_doc_set services state/ congestion/ congestion_level_starts
+  generate_doc_set services state/ recordcache/ recordcache
+  generate_doc_set services state/ consensus/ topic
+  generate_doc_set services state/ file/ file
+  generate_doc_set services state/ contract/ bytecode storage_slot
+  generate_doc_set services state/ ""  primitives
+  #generate_doc_set services state/ "" 
+}
+
+generate_services
+

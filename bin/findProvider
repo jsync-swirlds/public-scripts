@@ -1,0 +1,11 @@
+#!/bin/bash
+# Quick little script to find Dagger providers, which can be irritating to search for.
+if [[ ${#} -lt 1 ]]
+then
+  echo 'Please provide the class name for which you wish to find providers.'
+  echo "example: $0 JEd25519Key"
+else
+  classToFind="${1}"
+  fgrep -l '@Provides' $(fgrep -il "$classToFind" $(find . -type f -name '*.java'))
+fi
+
