@@ -60,9 +60,9 @@ generate_api_doc_set()
 generate_block()
 {
   generate_api_doc_set block
-  generate_doc_set block stream/ "" block block_header block_item block_proof event_metadata
-  generate_doc_set block stream/ input/ system_transaction
-  generate_doc_set block stream/ output/ network_service consensus_service crypto_service file_service schedule_service smart_contract_service token_service util_service transaction_output transaction_result state_changes
+  generate_doc_set block stream/ "" block block_item block_proof record_file_item
+  generate_doc_set block stream/ input/ event_metadata round_header
+  generate_doc_set block stream/ output/ block_header network_service consensus_service crypto_service file_service schedule_service smart_contract_service token_service util_service transaction_output transaction_result state_changes
 }
 
 generate_block

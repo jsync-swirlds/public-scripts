@@ -57,22 +57,33 @@ generate_api_doc_set()
   popd >/dev/null
 }
 
+generate_block()
+{
+  generate_api_doc_set block
+  generate_doc_set block stream/ "" block block_item block_proof record_file_item
+  generate_doc_set block stream/ input/ event_metadata round_header
+  generate_doc_set block stream/ output/ block_header network_service consensus_service crypto_service file_service schedule_service smart_contract_service token_service util_service transaction_output transaction_result state_changes
+}
+
 generate_services()
 {
   generate_api_doc_set services
   generate_doc_set services state/ addressbook/ node
-  generate_doc_set services state/ token/ account nft token_relation token staking_node_info network_staking_rewards
   generate_doc_set services state/ blockrecords/ block_info running_hashes
+  generate_doc_set services state/ blockstream/ block_stream_info
+  generate_doc_set services state/ congestion/ congestion_level_starts
+  generate_doc_set services state/ consensus/ topic
+  generate_doc_set services state/ contract/ bytecode storage_slot
+  generate_doc_set services state/ file/ file
+  generate_doc_set services state/ recordcache/ recordcache
+  generate_doc_set services state/ roster/ roster roster_state
   generate_doc_set services state/ schedule/ schedule
   generate_doc_set services state/ throttles/ throttle_usage_snapshots
-  generate_doc_set services state/ congestion/ congestion_level_starts
-  generate_doc_set services state/ recordcache/ recordcache
-  generate_doc_set services state/ consensus/ topic
-  generate_doc_set services state/ file/ file
-  generate_doc_set services state/ contract/ bytecode storage_slot
-  generate_doc_set services state/ ""  primitives
+  generate_doc_set services state/ token/ account account_pending_airdrop network_staking_rewards nft staking_node_info token token_relation
+  generate_doc_set services state/ ""  primitives common
   #generate_doc_set services state/ "" 
 }
 
 generate_services
+generate_block
 

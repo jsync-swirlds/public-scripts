@@ -1,0 +1,18 @@
+#!/bin/bash
+export VERSION="${BUILD_VERSION:-0.55.0-develop+0}"
+export DESTINATION="${ARTIFACT_DESTINATION:-../artifact-build}"
+export START_DIR="$(pwd)"
+
+rm -rf "${DESTINATION}"
+nice -n 20 ./gradlew clean assemble -Dsonar.gradle.skipCompile=true --warning-mode=summary --parallel --max-workers=12 --no-daemon --no-build-cache --no-configuration-cache
+mkdir "${DESTINATION}"
+mkdir -p "${DESTINATION}/data/lib"
+mkdir -p "${DESTINATION}/data/apps"
+cp -r hedera-node/data/lib/* "${DESTINATION}/data/lib/"
+cp -r hedera-node/data/apps/* "${DESTINATION}/data/apps/"
+cp hedera-node/configuration/update/immediate.sh "${DESTINATION}"
+cp hedera-node/configuration/update/during-freeze.sh "${DESTINATION}"
+pushd "${DESTINATION}"/
+zip -r "${START_DIR}/${VERSION}.zip" *
+popd
+

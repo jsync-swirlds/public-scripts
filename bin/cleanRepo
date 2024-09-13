@@ -1,26 +1,15 @@
 #!/bin/bash
 
-# Remove all folders with a particular folder name.
-# This function searches the full subtree rooted at the
-# current working folder.
-remove_folders_named()
-{
-  folder_name=${1:-build}
-  declare -a files
-  files=($(find . -name "${folder_name}" -type d))
-  numFiles=$(( ${#files[@]} ))
-  echo found ${numFiles} build folders
-  if [ "$numFiles" -gt "0" ]
-  then
-    rm -r "${files[@]}"
-    echo removed build folders
-  fi
-}
-
 # Remove the buid output folders
-remove_folders_named build
-# Remove the gradle caches, note this also removes the gradle wrapper(s)
-remove_folders_named .gradle
+declare -a files
+files=($(find . -name build -type d))
+numFiles=$(( ${#files[@]} ))
+echo found ${numFiles} build folders
+if [ "$numFiles" -gt "0" ]
+then
+  rm -r "${files[@]}"
+  echo removed build folders
+fi
 
 # also remove some other extra folders and files
 [[ -d hedera-node/hapi/hedera-protobufs ]] && rm -rf hedera-node/hapi/hedera-protobufs
