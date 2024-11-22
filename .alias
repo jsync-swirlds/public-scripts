@@ -1,4 +1,5 @@
-# Aliases and shell functions for Swirlds Labs Mac laptops.
+# Aliases and shell functions for Hashgraph Mac laptops.
+
 
 # Sometimes Mac decides to flash the heck out of the screen instead of beeping, regardless of setting.
 # This fixes it.
@@ -13,11 +14,14 @@ alias clearh='clear;history -c;history -w '
 alias largest='du -ms * | sort -n | tail '
 alias findNodes='ps auxww | fgrep java | cut -w -f 2,3,4,9,10-12 '
 alias showGitCleanTargets=' clear; git clean -dxn | egrep -v "build/|\.idea/|\.gradle/|hapi/checkouts\.bin|ExpectedMap.json.gz" '
+alias findEmbeddedChrome='clear;ps -ev | fgrep "(Renderer)" | cut -c 1-180 | fgrep -v "fgrep" | less '
 
 alias netserv='netstat -van -p tcp | fgrep LISTEN | cut -w -f 1,4,6,9 '
 alias netlist='lsof -P -iTCP -sTCP:LISTEN '
+alias sha384sum='shasum --UNIVERSAL -a 384 '
 
 alias gitupdate='git fetch && git prune && git remote prune origin && git gc '
+alias gitstat='date "+%Y-%m-%d"; git status '
 alias gitreset='git checkout local-base && git fetch && git prune && git remote prune origin && git rebase origin/develop && git gc && git branch '
 alias gitmainreset='git checkout local-base && git fetch && git prune && git remote prune origin && git rebase origin/main && git gc && git branch '
 alias newclone='git checkout -b local-base && git branch -D develop && git prune && git gc && git branch '
@@ -69,7 +73,11 @@ findRefs()
   reference="${1:-UNSPECIFIED}"
   filespec="${2:-java}"
   folder="${3:-.}"
-  find "${folder}" -name "*.${filespec}" -and -not -path "*/generated/*" -and -not -path "*/build/*" -exec fgrep "${reference}" '{}' \+
+  find "${folder}" -name "*.${filespec}" -and -not -path "*/generated/*" \
+       -and -not -path "*/.git/*" -and -not -path "*/.git" \
+       -and -not -path "*/.gradle" -and -not -path "*/.gradle/*" \
+       -and -not -path "*/.idea/*" -and -not -path "*/.idea" \
+       -and -not -path "*/build/*" -exec fgrep "${reference}" '{}' \+
 }
 
 countLines()
@@ -109,5 +117,10 @@ AllRepoCleanup() {
 b64d() {
   base64 -d <<<"$*"
   echo
+}
+
+sha384check() {
+  input="$*"
+  shasum -a 384 --UNIVERSAL --check <<<"${input}"
 }
 
