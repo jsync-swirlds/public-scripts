@@ -1,6 +1,5 @@
 # Aliases and shell functions for Hashgraph Mac laptops.
 
-
 # Sometimes Mac decides to flash the heck out of the screen instead of beeping, regardless of setting.
 # This fixes it.
 alias fixVisualScream='sudo killall coreaudiod '
@@ -30,25 +29,29 @@ alias newclone='git checkout -b local-base && git branch -D develop && git prune
 export GRADLE='nice -n 20 gradle '
 export GRADLE_UT_OPTS=' -Dtestlogger.showPassed=false -Dtestlogger.showSkipped=false -Dtestlogger.showPassedStandardStreams=false -Dtestlogger.theme=mocha-parallel '
 export GRADLE_PARALLEL_OPTS='--parallel --max-workers=12' # Apple M1 Max has only 10 cores...
-export GRADLE_CLEAN_OPTS='--no-daemon --no-build-cache --no-configuration-cache'
-export GRADLE_COMPILE_OPTS="-Dsonar.gradle.skipCompile=true --warning-mode=summary ${GRADLE_PARALLEL_OPTS} ${GRADLE_CLEAN_OPTS}"
-export GRADLE_TEST_OPTS="--no-daemon ${GRADLE_PARALLEL_OPTS} ${GRADLE_UT_OPTS}"
-alias grdlProjects='${GRADLE} projects ${GRADLE_CLEAN_OPTS} '
-alias grdlClean='${GRADLE} clean --warning-mode=summary ${GRADLE_PARALLEL_OPTS} ${GRADLE_CLEAN_OPTS} '
+export GRADLE_BASE_OPTS='--no-daemon --no-build-cache --no-configuration-cache'
+# The "merged build" has no proper compile option, so we have to do this garbage
+export GRADLE_COMPILE_OPTS="--warning-mode=summary ${GRADLE_PARALLEL_OPTS} ${GRADLE_BASE_OPTS}"
+export GRADLE_TEST_OPTS="--rerun-tasks --no-daemon ${GRADLE_PARALLEL_OPTS} ${GRADLE_UT_OPTS}"
+export GRADLE_EXEC_OPTS="--rerun-tasks --warning-mode=summary ${GRADLE_PARALLEL_OPTS} ${GRADLE_BASE_OPTS} ${GRADLE_UT_OPTS}"
+alias grdlProjects='${GRADLE} projects ${GRADLE_BASE_OPTS} '
+alias grdlClean='${GRADLE} clean --rerun-tasks --warning-mode=summary ${GRADLE_PARALLEL_OPTS} ${GRADLE_BASE_OPTS} '
 alias grdlTest='${GRADLE} assemble ${GRADLE_COMPILE_OPTS} && ${GRADLE} test ${GRADLE_TEST_OPTS} '
-alias grdlHapi='${GRADLE} hapiTest -Dsonar.gradle.skipCompile=true ${GRADLE_TEST_OPTS} ${GRADLE_CLEAN_OPTS} '
-alias grdlModules='${GRADLE} checkAllModuleInfo ${GRADLE_COMPILE_OPTS} '
+alias grdlHapi='${GRADLE} hapiTest ${GRADLE_TEST_OPTS} ${GRADLE_BASE_OPTS} '
+alias grdlQCheck='${GRADLE} qualityCheck --rerun-tasks ${GRADLE_COMPILE_OPTS} '
+alias grdlModules='${GRADLE} checkAllModuleInfo --rerun-tasks ${GRADLE_COMPILE_OPTS} '
 alias grdlCompile='${GRADLE} assemble ${GRADLE_COMPILE_OPTS} '
-alias grdlCleanCompile='${GRADLE} clean assemble ${GRADLE_COMPILE_OPTS} '
+alias grdlCleanCompile='grdlClean && grdlCompile '
 alias grdlCleanTest='grdlCleanCompile && ${GRADLE} test ${GRADLE_TEST_OPTS} '
-alias grdlScanTest='grdlCleanCompile && ${GRADLE} test ${GRADLE_TEST_OPTS} ${GRADLE_CLEAN_OPTS} --scan '
-alias grdlFastTest='${GRADLE} test --warning-mode=summary ${GRADLE_TEST_OPTS} '
-alias grdlExtraCleanTest='grdlCleanCompile && grdlModules && ${GRADLE} test ${GRADLE_TEST_OPTS} ${GRADLE_CLEAN_OPTS} '
-alias grdlSpotless='grdlCompile && ${GRADLE} ${GRADLE_PARALLEL_OPTS} ${GRADLE_CLEAN_OPTS} checkAllModuleInfo spotlessCheck --warning-mode=summary -Dsonar.gradle.skipCompile=true '
-alias grdlReformat='${GRADLE} ${GRADLE_PARALLEL_OPTS} ${GRADLE_CLEAN_OPTS} spotlessApply --warning-mode=summary -Dsonar.gradle.skipCompile=true '
+alias grdlScanTest='grdlCleanCompile && ${GRADLE} test ${GRADLE_TEST_OPTS} ${GRADLE_BASE_OPTS} --scan '
+alias grdlFastTest='${GRADLE} test --warning-mode=summary --no-daemon ${GRADLE_PARALLEL_OPTS} ${GRADLE_UT_OPTS} '
+alias grdlExtraCleanTest='grdlClean && grdlCompile && grdlModules && grdlQCheck && ${GRADLE} test ${GRADLE_TEST_OPTS} ${GRADLE_BASE_OPTS} '
+alias grdlSpotless='grdlCompile && ${GRADLE} ${GRADLE_PARALLEL_OPTS} ${GRADLE_BASE_OPTS} qualityCheck spotlessCheck --warning-mode=summary '
+alias grdlReformat='${GRADLE} ${GRADLE_PARALLEL_OPTS} ${GRADLE_BASE_OPTS} spotlessApply --warning-mode=summary '
+alias grdlExec='${GRADLE} ${GRADLE_EXEC_OPTS} '
 alias finalPRChecks='grdlReformat && grdlExtraCleanTest && ${GRADLE} build --warning-mode=summary ${GRADLE_TEST_OPTS} && grdlHapi '
-alias pbjInt='${GRADLE} ${GRADLE_CLEAN_OPTS} clean :generatePbjSource :generateProto && ${GRADLE} ${GRADLE_CLEAN_OPTS} assemble test ${GRADLE_PARALLEL_OPTS} ${GRADLE_UT_OPTS} '
-alias pbjCore='${GRADLE} ${GRADLE_CLEAN_OPTS} clean assemble test ${GRADLE_PARALLEL_OPTS} ${GRADLE_UT_OPTS} publishToMavenLocal '
+alias pbjInt='${GRADLE} ${GRADLE_BASE_OPTS} clean :generatePbjSource :generateProto && ${GRADLE} ${GRADLE_BASE_OPTS} assemble test ${GRADLE_PARALLEL_OPTS} ${GRADLE_UT_OPTS} '
+alias pbjCore='${GRADLE} ${GRADLE_BASE_OPTS} clean assemble test ${GRADLE_PARALLEL_OPTS} ${GRADLE_UT_OPTS} publishToMavenLocal '
 
 alias pip='pip3 '
 
@@ -73,7 +76,7 @@ findRefs()
   reference="${1:-UNSPECIFIED}"
   filespec="${2:-java}"
   folder="${3:-.}"
-  find "${folder}" -name "*.${filespec}" -and -not -path "*/generated/*" \
+  find "${folder}" -type f -name "*.${filespec}" -and -not -path "*/generated/*" \
        -and -not -path "*/.git/*" -and -not -path "*/.git" \
        -and -not -path "*/.gradle" -and -not -path "*/.gradle/*" \
        -and -not -path "*/.idea/*" -and -not -path "*/.idea" \
